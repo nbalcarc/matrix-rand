@@ -31,7 +31,6 @@ fn long() {
 fn main() {
     println!("Hello, world!");
     short();
-
 }
 
 

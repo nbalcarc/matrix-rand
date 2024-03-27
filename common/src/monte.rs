@@ -1,7 +1,5 @@
 use rand::{seq::SliceRandom, thread_rng};
-
 use crate::regular;
-
 
 
 /// Downscale through random sampling
@@ -16,6 +14,7 @@ pub fn multiply_float(a: &[f32], b: &[f32], sizes: (usize, usize, usize), downsa
         a_columns[i % sizes.1].push(a[i]);
     }
 
+    // get column magnitudes
     let column_squared_magnitudes: Vec<f64> = a_columns.iter()
         .map(|col|
              col.iter()
@@ -24,11 +23,13 @@ pub fn multiply_float(a: &[f32], b: &[f32], sizes: (usize, usize, usize), downsa
         )
         .collect();
 
+    // generate probabilities for each column
     let bracket_a: f64 = column_squared_magnitudes.iter().sum();
     let probs: Vec<f64> = column_squared_magnitudes.iter().map(|x| x / bracket_a).collect();
-    let columns: Vec<usize> = (0..sizes.1).collect();
 
+    // select the columns to use
     let mut rng = thread_rng();
+    let columns: Vec<usize> = (0..sizes.1).collect();
     let zipped: Vec<((usize, f64), f64)> = columns.iter()
         .zip(probs.iter())
         .map(|x| ((*x.0, *x.1), *x.1))
@@ -37,9 +38,9 @@ pub fn multiply_float(a: &[f32], b: &[f32], sizes: (usize, usize, usize), downsa
         .map(|_| zipped.choose_weighted(&mut rng, |x| x.1).unwrap().0)
         .collect();
 
+    // fix columns and push to S and R
     let mut s = Vec::with_capacity(sizes.0 * downsample); //new A
     let mut r = Vec::with_capacity(sizes.2 * downsample); //new B
-
     for choice in chosen {
         let index = choice.0;
         let prob = choice.1;
@@ -54,6 +55,7 @@ pub fn multiply_float(a: &[f32], b: &[f32], sizes: (usize, usize, usize), downsa
         r.extend(adjusted_rcol);
     }
 
+    // return final result
     regular::multiply_float(&s, &r, (sizes.0, downsample, sizes.2))
 }
 
