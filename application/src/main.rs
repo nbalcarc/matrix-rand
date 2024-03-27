@@ -1,5 +1,3 @@
-use core::f64;
-
 use common::{monte, regular};
 use rand;
 
@@ -17,11 +15,11 @@ fn short() {
     ];
     let sizes = (2, 4, 3);
     println!("{:?}", regular::multiply_float(&a, &b, sizes));
-    println!("{:?}", monte::multiply_float(&a, &b, sizes, 4));
+    println!("{:?}", monte::multiply_float(&a, &b, sizes, 3));
 }
 
-fn long() {
 
+fn long() {
     let sizes = (2_048, 1_536, 1_024);
     let a: Vec<f32> = (0..sizes.0*sizes.1).into_iter().map(|_| rand::random()).collect();
     let b: Vec<f32> = (0..sizes.1*sizes.2).into_iter().map(|_| rand::random()).collect();
