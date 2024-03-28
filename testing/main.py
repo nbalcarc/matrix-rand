@@ -91,8 +91,10 @@ print(f"{b[b_cell]}")
 results = get_matched(b_cell, b.shape, a.shape)
 print(results)
 #print(f"{a[results[0]]}, {a[results[1]]}, {a[results[2]]}, {a[results[3]]}")
-print(f"{a[results[0], results[2]]}, {a[results[1], results[3]]}")
+#print(f"{a[results[0], results[2]]}, {a[results[1], results[3]]}")
 
+print()
+print(f"{get_index(1.0, 2)}")
 
 
 
