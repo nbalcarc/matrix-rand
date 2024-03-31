@@ -39,7 +39,7 @@ fn long() {
 
 fn thing() {
     let sizes = (2_048, 1_536, 1_024);
-    let trials = 1;
+    let trials = 10;
 
     println!("Generating matrices");
     let a: Vec<f32> = (0..sizes.0*sizes.1).into_iter().map(|_| rand::random()).collect();
@@ -59,6 +59,9 @@ fn thing() {
         println!("Iteration {}", i);
         let now = Instant::now();
         c = regular::multiply_float(&a, &b, sizes);
+        //println!("{:?}", c);
+        //println!("{:?}", c.iter().sum::<f32>() / c.len() as f32);
+        //todo!();
         times.push(now.elapsed());
     }
     perf_blocks.push(PerfBlock {

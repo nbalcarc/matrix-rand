@@ -1,6 +1,7 @@
 pub mod regular;
 pub mod monte;
 pub mod tools;
+pub mod compression;
 
 //pub fn add(left: usize, right: usize) -> usize {
 //    left + right
