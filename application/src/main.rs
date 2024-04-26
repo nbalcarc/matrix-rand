@@ -37,6 +37,50 @@ fn long() {
     println!("{:?}, {:?}", c, c.iter().sum::<f32>());
 }
 
+
+fn run_test(
+    test_name: String,
+    a: &[f32],
+    b: &[f32],
+    sizes: (usize, usize, usize),
+    func: &dyn Fn(&[f32], &[f32], (usize, usize, usize)) -> Vec<f32>,
+    c: &[f32],
+    trials: usize,
+) -> PerfBlock {
+
+    println!("Running test: {}", test_name);
+    let mut times = Vec::with_capacity(trials);
+    let mut accuracies = Vec::with_capacity(trials);
+    for i in 0..trials {
+        println!("Iteration {}", i);
+        let now = Instant::now();
+        let c_prime = func(&a, &b, sizes);
+        times.push(now.elapsed());
+        accuracies.push(stats(&c, &c_prime));
+    }
+    
+    PerfBlock {
+        name: test_name,
+        time: times.into_iter().map(|x| x.as_secs_f64()).sum::<f64>() / trials as f64,
+        mae: accuracies.into_iter().sum::<f64>() / trials as f64,
+    }
+}
+
+
+fn monte_1152(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    monte::multiply(a, b, sizes, 1152)
+}
+fn monte_768(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    monte::multiply(a, b, sizes, 768)
+}
+fn monte_384(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    monte::multiply(a, b, sizes, 384)
+}
+fn monte_192(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    monte::multiply(a, b, sizes, 192)
+}
+
+
 fn thing() {
     let sizes = (2_048, 1_536, 1_024);
     let trials = 10;
@@ -69,22 +113,6 @@ fn thing() {
         time: times.into_iter().map(|x| x.as_secs_f64()).sum::<f64>() / trials as f64,
         mae: 0.0,
     });
-
-    // regular int
-    //let test_name = String::from("regular int");
-    //println!("Running test: {}", test_name);
-    //let mut times = Vec::with_capacity(trials);
-    //for i in 0..trials {
-    //    println!("Iteration {}", i);
-    //    let now = Instant::now();
-    //    regular::multiply_int(&a_int, &b_int, sizes);
-    //    times.push(now.elapsed());
-    //}
-    //perf_blocks.push(PerfBlock {
-    //    name: test_name,
-    //    time: times.into_iter().map(|x| x.as_secs_f64()).sum::<f64>() / trials as f64,
-    //    mae: 0.0,
-    //});
 
     // monte carlo 1152
     let test_name = String::from("monte 1152");
@@ -161,11 +189,15 @@ fn thing() {
 
 
     println!("{:?}", perf_blocks);
-
-
-
-
 }
+
+
+
+fn thing1() {
+    let diseases = vec!["(vertigo) Paroymsal  Positional Vertigo", "AIDS", "Acne", "Alcoholic hepatitis", "Allergy", "Arthritis", "Bronchial Asthma", "Cervical spondylosis", "Chicken pox", "Chronic cholestasis", "Common Cold", "Dengue", "Diabetes ", "Dimorphic hemmorhoids(piles)", "Drug Reaction", "Fungal infection", "GERD", "Gastroenteritis", "Heart attack", "Hepatitis B", "Hepatitis C", "Hepatitis D", "Hepatitis E", "Hypertension ", "Hyperthyroidism", "Hypoglycemia", "Hypothyroidism", "Impetigo", "Jaundice", "Malaria", "Migraine", "Osteoarthristis", "Paralysis (brain hemorrhage)", "Peptic ulcer diseae", "Pneumonia", "Psoriasis", "Tuberculosis", "Typhoid", "Urinary tract infection", "Varicose veins", "hepatitis A"];
+    let diseases_size = diseases.len();
+}
+
 
 
 fn main() {
