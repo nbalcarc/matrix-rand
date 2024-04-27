@@ -1,15 +1,16 @@
 use rand::prelude::*;
 
 // Define a trait for matrix multiplication
-trait MatrixMultiplier {
-    fn multiply(&self, a: &[f64], b: &[f64], rows_a: usize, cols_a: usize, cols_b: usize) -> Vec<f64>;
+pub trait MatrixMultiplier {
+    fn multiply(&self, a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32>;
 }
 
 // Implement the trait for the default matrix multiplication
 struct DefaultMatrixMultiplier;
 
 impl MatrixMultiplier for DefaultMatrixMultiplier {
-    fn multiply(&self, a: &[f64], b: &[f64], rows_a: usize, cols_a: usize, cols_b: usize) -> Vec<f64> {
+    fn multiply(&self, a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+        let (rows_a, cols_a, cols_b) = sizes;
         let mut result = vec![0.0; rows_a * cols_b];
 
         for i in 0..rows_a {
@@ -24,18 +25,18 @@ impl MatrixMultiplier for DefaultMatrixMultiplier {
     }
 }
 
-struct NeuralNetwork<M>
+pub struct NeuralNetwork<M>
 where
     M: MatrixMultiplier,
 {
     input_size: usize,
     hidden_size: usize,
     output_size: usize,
-    learning_rate: f64,
-    weights_input_hidden: Vec<f64>,
-    weights_hidden_output: Vec<f64>,
-    bias_hidden: Vec<f64>, // Bias for the hidden layer
-    bias_output: Vec<f64>, // Bias for the output layer
+    learning_rate: f32,
+    weights_input_hidden: Vec<f32>,
+    weights_hidden_output: Vec<f32>,
+    bias_hidden: Vec<f32>, // Bias for the hidden layer
+    bias_output: Vec<f32>, // Bias for the output layer
     multiplier: M,
 }
 
@@ -44,11 +45,11 @@ where
     M: MatrixMultiplier,
 {
     // Constructor to initialize the neural network
-    fn new(
+    pub fn new(
         input_size: usize,
         hidden_size: usize,
         output_size: usize,
-        learning_rate: f64,
+        learning_rate: f32,
         multiplier: M,
     ) -> Self {
         let mut rng = thread_rng();
@@ -80,65 +81,65 @@ where
 
 
     // Sigmoid activation function
-    fn sigmoid(&self, x: f64) -> f64 {
+    pub fn sigmoid(&self, x: f32) -> f32 {
         1.0 / (1.0 + (-x).exp())
     }
 
     // Forward propagation to compute predictions
-    fn forward(&self, inputs: &[f64]) -> Vec<f64> {
+    pub fn forward(&self, inputs: &[f32]) -> Vec<f32> {
         // Calculate hidden layer activations (including bias)
         let mut hidden_activations = self.multiplier.multiply(
             inputs,
             &self.weights_input_hidden,
-            1,
+            (1,
             self.input_size,
-            self.hidden_size,
+            self.hidden_size),
         );
         for i in 0..self.hidden_size {
             hidden_activations[i] += self.bias_hidden[i];
         }
-        let hidden_activations = hidden_activations.iter().map(|&x| self.sigmoid(x)).collect::<Vec<f64>>();
+        let hidden_activations = hidden_activations.iter().map(|&x| self.sigmoid(x)).collect::<Vec<f32>>();
 
         // Calculate output layer activations (including bias)
         let mut output_activations = self.multiplier.multiply(
             &hidden_activations,
             &self.weights_hidden_output,
-            1,
+            (1,
             self.hidden_size,
-            self.output_size,
+            self.output_size),
         );
         for i in 0..self.output_size {
             output_activations[i] += self.bias_output[i];
         }
-        output_activations.iter().map(|&x| self.sigmoid(x)).collect::<Vec<f64>>()
+        output_activations.iter().map(|&x| self.sigmoid(x)).collect::<Vec<f32>>()
     }
 
     // Backpropagation to update weights and biases based on loss
-    fn backpropagate(&mut self, inputs: &[f64], targets: &[f64]) {
+    pub fn backpropagate(&mut self, inputs: &[f32], targets: &[f32]) {
         // Forward pass
         let mut hidden_activations = self.multiplier.multiply(
             inputs,
             &self.weights_input_hidden,
-            1,
+            (1,
             self.input_size,
-            self.hidden_size,
+            self.hidden_size),
         );
         for i in 0..self.hidden_size {
             hidden_activations[i] += self.bias_hidden[i];
         }
-        let hidden_activations = hidden_activations.iter().map(|&x| self.sigmoid(x)).collect::<Vec<f64>>();
+        let hidden_activations = hidden_activations.iter().map(|&x| self.sigmoid(x)).collect::<Vec<f32>>();
 
         let mut output_activations = self.multiplier.multiply(
             &hidden_activations,
             &self.weights_hidden_output,
-            1,
+            (1,
             self.hidden_size,
-            self.output_size,
+            self.output_size),
         );
         for i in 0..self.output_size {
             output_activations[i] += self.bias_output[i];
         }
-        let output_activations = output_activations.iter().map(|&x| self.sigmoid(x)).collect::<Vec<f64>>();
+        let output_activations = output_activations.iter().map(|&x| self.sigmoid(x)).collect::<Vec<f32>>();
 
         // Compute output layer error
         let mut output_errors = vec![0.0; self.output_size];
@@ -166,10 +167,13 @@ where
             for j in 0..self.output_size {
                 self.weights_hidden_output[i * self.output_size + j] -=
                     self.learning_rate * output_deltas[j] * hidden_activations[i];
+
+                // Update biases for the output layer
+                self.bias_output[j] -= self.learning_rate * output_deltas[0] * 0.1;
             }
-            // Update biases for the output layer
-            self.bias_output[i] -= self.learning_rate * output_deltas[i];
         }
+
+        println!("output errors: {:?}", output_deltas);
 
         for i in 0..self.input_size {
             for j in 0..self.hidden_size {
@@ -183,7 +187,7 @@ where
 
 
     // Train the neural network using backpropagation
-    fn train(&mut self, inputs: &[Vec<f64>], targets: &[Vec<f64>], epochs: usize) {
+    pub fn train(&mut self, inputs: &[Vec<f32>], targets: &[Vec<f32>], epochs: usize) {
         assert_eq!(inputs.len(), targets.len(), "Input and target dimensions mismatch");
 
         for _ in 0..epochs {

@@ -1,15 +1,32 @@
 use rand::prelude::*;
 
+use crate::neuralnet::MatrixMultiplier;
+
+
+pub struct HadamardMultiplier {
+    pub d: usize, //number of columns to sample for RHT approximation
+}
+impl HadamardMultiplier {
+    pub fn new(d: usize) -> Self {
+        HadamardMultiplier { d }
+    }
+}
+impl MatrixMultiplier for HadamardMultiplier {
+    fn multiply(&self, a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+        randomized_hadamard_transform(a, b, sizes, self.d)
+    }
+}
+
 // Function to perform Randomized Hadamard Transform (RHT) for matrix multiplication approximation
-fn randomized_hadamard_transform(
-    a: &[f64], // Contiguous array representing matrix A (row-major order)
-    b: &[f64], // Contiguous array representing matrix B (row-major order)
+pub fn randomized_hadamard_transform(
+    a: &[f32], // Contiguous array representing matrix A (row-major order)
+    b: &[f32], // Contiguous array representing matrix B (row-major order)
     //m: usize,  // Number of rows in matrix A
     //n: usize,  // Number of columns in matrix A (and rows in matrix B)
     //p: usize,  // Number of columns in matrix B
     sizes: (usize, usize, usize), //rows in A, columns in A / rows in B, columns in B
     d: usize,  // Number of columns to sample for RHT approximation
-) -> Vec<f64> {
+) -> Vec<f32> {
 
     let m = sizes.0;
     let n = sizes.1;

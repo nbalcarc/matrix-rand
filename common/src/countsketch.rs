@@ -1,116 +1,109 @@
 use rand::prelude::*;
 
-// Define a struct for the CountSketch data structure
-struct CountSketch {
-    sketch: Vec<Vec<f64>>,
-    hash_indices: Vec<Vec<usize>>,
-    signs: Vec<Vec<i32>>,
+pub struct CountSketch {
+    sketch: Vec<Vec<f32>>,
+    hash_functions: Vec<(usize, usize)>, // (a, b) parameters for hash functions
 }
 
 impl CountSketch {
-    // Constructor to initialize CountSketch with specified parameters
-    fn new(rows: usize, sketch_width: usize, num_hash_functions: usize) -> Self {
-        let mut sketch = vec![vec![0.0; sketch_width]; rows];
+    pub fn new(num_rows: usize, num_cols: usize) -> Self {
         let mut rng = thread_rng();
-        let hash_indices: Vec<Vec<usize>> = (0..num_hash_functions)
-            .map(|_| (0..rows).map(|_| rng.gen_range(0..sketch_width)).collect())
-            .collect();
-        let signs: Vec<Vec<i32>> = (0..num_hash_functions)
-            .map(|_| (0..rows).map(|_| if rng.gen::<bool>() { 1 } else { -1 }).collect())
+        let sketch = vec![vec![0.0; num_cols]; num_rows];
+
+        // Generate hash functions (a, b) for each row
+        let hash_functions: Vec<(usize, usize)> = (0..num_rows)
+            .map(|_| (rng.gen_range(1..=usize::MAX), rng.gen_range(0..=usize::MAX)))
             .collect();
 
         CountSketch {
             sketch,
-            hash_indices,
-            signs,
+            hash_functions,
         }
     }
 
-    // Update the CountSketch with a column vector and corresponding sign using hash indices
-    fn update_with_hash_indices(&mut self, column: &[f64], sign: i32, hash_indices: &[usize]) {
-        for (i, &index) in hash_indices.iter().enumerate() {
-            self.sketch[i][index] += column[i] * sign as f64;
+    pub fn sketch_vector(&self, column: &[f32]) -> Vec<f32> {
+        // Ensure column length matches sketch rows
+        assert_eq!(column.len(), self.sketch.len());
+
+        let mut sketch_result = vec![0.0; self.sketch[0].len()];
+
+        // Update CountSketch with the given column vector
+        for i in 0..self.sketch.len() {
+            let (a, b) = self.hash_functions[i];
+            let hash_index = ((a as usize * i) + b as usize) % self.sketch[i].len();
+
+            // Update sketch result at the computed hash index
+            let sign = if a % 2 == 0 { 1 } else { -1 };
+            sketch_result[hash_index] += column[i] * sign as f32;
         }
+
+        sketch_result
     }
 
-    // Perform approximate matrix multiplication using CountSketch
-    fn matrix_multiply(
-        &mut self,
-        A: &[f64],      // Contiguous array representing matrix A (row-major order)
-        B: &[f64],      // Contiguous array representing matrix B (row-major order)
-        rows_A: usize,  // Number of rows in matrix A
-        cols_A: usize,  // Number of columns in matrix A
-        cols_B: usize,  // Number of columns in matrix B
-    ) -> Vec<f64> {
-        assert_eq!(cols_A, B.len() / cols_B, "Matrix dimensions mismatch");
-
-        let mut result = vec![0.0; rows_A * cols_B];
-
-        /// remove any borrow errors
-        let hash_indices_copy = self.hash_indices.clone();
-        let signs_copy = self.signs.clone();
-
-        // Iterate over columns of B (result matrix columns)
-        for j in 0..cols_B {
-            // Compute hash indices and signs for the j-th column of B
-            //let hash_indices = &self.hash_indices[j % self.hash_indices.len()];
-            let hash_indices = &hash_indices_copy[j % self.hash_indices.len()];
-            let signs = &signs_copy[j % self.signs.len()];
-
-            // Update CountSketch with the j-th column of A and corresponding signs
-            for i in 0..rows_A {
-                let a_start_idx = i * cols_A;
-                let b_start_idx = j * cols_A; // Start of j-th column in B
-                let a_row = &A[a_start_idx..a_start_idx + cols_A];
-                let b_col = &B[b_start_idx..b_start_idx + cols_A]; // Extract j-th column from B
-
-                self.update_with_hash_indices(a_row, signs[i], hash_indices);
-
-                // Compute the approximate product (accumulate into result)
-                let result_idx = i * cols_B + j;
-                for (k, &sketch_index) in hash_indices.iter().enumerate() {
-                    result[result_idx] += self.sketch[k][sketch_index] * b_col[k];
-                }
-
-                self.update_with_hash_indices(a_row, -signs[i], hash_indices); // Restore the sketch after use
-            }
-        }
-
-        result
+    pub fn get_sketch(&self) -> &[Vec<f32>] {
+        &self.sketch
     }
 }
 
+pub fn matrix_multiply_with_sketch(
+    a: &[f32],
+    b: &[f32],
+    rows_a: usize,
+    cols_a: usize,
+    cols_b: usize,
+    count_sketch: &CountSketch,
+) -> Vec<f32> {
+    assert_eq!(a.len(), rows_a * cols_a);
+    assert_eq!(b.len(), cols_a * cols_b);
+
+    let mut result = vec![0.0; rows_a * cols_b];
+
+    for i in 0..cols_a {
+        // Sketch the i-th column of matrix a
+        let sketch_a = count_sketch.sketch_vector(&a[i * rows_a..(i + 1) * rows_a]);
+
+        for j in 0..cols_b {
+            // Compute dot product of sketched column and j-th column of matrix b
+            let mut sum = 0.0;
+            for k in 0..rows_a {
+                sum += sketch_a[k] * b[k * cols_b + j];
+            }
+            result[i * cols_b + j] += sum;
+        }
+    }
+
+    result
+}
+
 fn main() {
-    // Example matrices A and B (contiguous arrays with row-major order)
-    let A = vec![
-        1.0, 2.0,
-        3.0, 4.0,
-    ];
+    let num_rows = 5;
+    let num_cols = 5;
+    let count_sketch = CountSketch::new(num_rows, num_cols);
 
-    let B = vec![
-        5.0, 6.0,
-        7.0, 8.0,
-    ];
+    // Example input matrices dimensions
+    let rows_a = 3;
+    let cols_a = 2;
+    let cols_b = 4;
 
-    let rows_A = 2;   // Number of rows in matrix A
-    let cols_A = 2;   // Number of columns in matrix A
-    let cols_B = 2;   // Number of columns in matrix B
+    // Example input matrices
+    let matrix_a = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]; // Row-major order
+    let matrix_b = vec![9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]; // Row-major order
 
-    // Parameters for CountSketch
-    let sketch_width = 5;             // Width of the CountSketch
-    let num_hash_functions = 3;        // Number of hash functions to use
+    // Perform matrix multiplication with CountSketch
+    let product = matrix_multiply_with_sketch(
+        &matrix_a,
+        &matrix_b,
+        rows_a,
+        cols_a,
+        cols_b,
+        &count_sketch,
+    );
 
-    // Initialize CountSketch
-    let mut count_sketch = CountSketch::new(rows_A, sketch_width, num_hash_functions);
-
-    // Perform approximate matrix multiplication using CountSketch
-    let result = count_sketch.matrix_multiply(&A, &B, rows_A, cols_A, cols_B);
-
-    // Output the approximate result vector
-    println!("Approximate result of matrix multiplication using CountSketch:");
-    for i in 0..rows_A {
-        for j in 0..cols_B {
-            print!("{:.2} ", result[i * cols_B + j]);
+    // Display the resulting matrix product
+    println!("Matrix Multiplication Result:");
+    for i in 0..rows_a {
+        for j in 0..cols_b {
+            print!("{:.2} ", product[i * cols_b + j]);
         }
         println!();
     }

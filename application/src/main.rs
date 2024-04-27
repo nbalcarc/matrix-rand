@@ -1,7 +1,14 @@
-use std::time::Instant;
+mod csv_reader;
 
-use common::{monte, regular, tools::stats};
+
+use std::{borrow::{Borrow, BorrowMut}, cell::RefCell, collections::HashMap, rc::Rc, time::Instant};
+
+use common::{countsketch::CountSketch, hadamard, monte::{self, MonteMultiplier}, neuralnet::NeuralNetwork, regular, tools::stats};
+use csv_reader::{read_disease_test, read_disease_train};
 use rand;
+
+
+
 
 
 #[derive(Debug, Clone)]
@@ -79,6 +86,33 @@ fn monte_384(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
 fn monte_192(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
     monte::multiply(a, b, sizes, 192)
 }
+fn hadamard_18432(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 18432)
+}
+fn hadamard_9216(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 9216)
+}
+fn hadamard_4608(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 4608)
+}
+fn hadamard_2304(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 2304)
+}
+fn hadamard_1536(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 1536)
+}
+fn hadamard_1152(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 1152)
+}
+fn hadamard_768(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 768)
+}
+fn hadamard_384(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 384)
+}
+fn hadamard_192(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+    hadamard::randomized_hadamard_transform(a, b, sizes, 192)
+}
 
 
 fn thing() {
@@ -95,17 +129,21 @@ fn thing() {
 
     let mut perf_blocks = Vec::with_capacity(16);
 
+    //let countsketch_1536_3 = Rc::new(RefCell::new(CountSketch::new(sizes.0, 1536, 3)));
+    //let countsketch_1536_10 = Rc::new(RefCell::new(CountSketch::new(sizes.0, 1536, 10)));
+    //let countsketch_1152_3 = Rc::new(RefCell::new(CountSketch::new(sizes.0, 1152, 3)));
+    //let countsketch_1152_10 = Rc::new(RefCell::new(CountSketch::new(sizes.0, 1152, 10)));
+    //let countsketch_1024_3 = Rc::new(RefCell::new(CountSketch::new(sizes.0, 1024, 3)));
+    //let countsketch_1024_10 = Rc::new(RefCell::new(CountSketch::new(sizes.0, 1024, 10)));
+
     // regular
     let test_name = String::from("regular");
     println!("Running test: {}", test_name);
     let mut times = Vec::with_capacity(trials);
-    for i in 0..trials {
+    for i in 0..1 { //CHANGE THIS BACK TO TRIALS
         println!("Iteration {}", i);
         let now = Instant::now();
         c = regular::multiply_float(&a, &b, sizes);
-        //println!("{:?}", c);
-        //println!("{:?}", c.iter().sum::<f32>() / c.len() as f32);
-        //todo!();
         times.push(now.elapsed());
     }
     perf_blocks.push(PerfBlock {
@@ -114,79 +152,50 @@ fn thing() {
         mae: 0.0,
     });
 
-    // monte carlo 1152
-    let test_name = String::from("monte 1152");
-    println!("Running test: {}", test_name);
-    let mut times = Vec::with_capacity(trials);
-    let mut accuracies = Vec::with_capacity(trials);
-    for i in 0..trials {
-        println!("Iteration {}", i);
-        let now = Instant::now();
-        let c_prime = monte::multiply(&a, &b, sizes, 1152);
-        times.push(now.elapsed());
-        accuracies.push(stats(&c, &c_prime));
-    }
-    perf_blocks.push(PerfBlock {
-        name: test_name,
-        time: times.into_iter().map(|x| x.as_secs_f64()).sum::<f64>() / trials as f64,
-        mae: accuracies.into_iter().sum::<f64>() / trials as f64,
-    });
+    //// monte carlo 1152
+    //perf_blocks.push(run_test("monte 1152".to_string(), &a, &b, sizes, &monte_1152, &c, trials));
 
-    // monte carlo 768
-    let test_name = String::from("monte 768");
-    println!("Running test: {}", test_name);
-    let mut times = Vec::with_capacity(trials);
-    let mut accuracies = Vec::with_capacity(trials);
-    for i in 0..trials {
-        println!("Iteration {}", i);
-        let now = Instant::now();
-        let c_prime = monte::multiply(&a, &b, sizes, 768);
-        times.push(now.elapsed());
-        accuracies.push(stats(&c, &c_prime));
-    }
-    perf_blocks.push(PerfBlock {
-        name: test_name,
-        time: times.into_iter().map(|x| x.as_secs_f64()).sum::<f64>() / trials as f64,
-        mae: accuracies.into_iter().sum::<f64>() / trials as f64,
-    });
+    //// monte carlo 768
+    //perf_blocks.push(run_test("monte 768".to_string(), &a, &b, sizes, &monte_768, &c, trials));
 
-    // monte carlo 384
-    let test_name = String::from("monte 384");
-    println!("Running test: {}", test_name);
-    let mut times = Vec::with_capacity(trials);
-    let mut accuracies = Vec::with_capacity(trials);
-    for i in 0..trials {
-        println!("Iteration {}", i);
-        let now = Instant::now();
-        let c_prime = monte::multiply(&a, &b, sizes, 384);
-        times.push(now.elapsed());
-        accuracies.push(stats(&c, &c_prime));
-    }
-    perf_blocks.push(PerfBlock {
-        name: test_name,
-        time: times.into_iter().map(|x| x.as_secs_f64()).sum::<f64>() / trials as f64,
-        mae: accuracies.into_iter().sum::<f64>() / trials as f64,
-    });
+    //// monte carlo 384
+    //perf_blocks.push(run_test("monte 384".to_string(), &a, &b, sizes, &monte_384, &c, trials));
 
-    // monte carlo 192
-    let test_name = String::from("monte 192");
-    println!("Running test: {}", test_name);
-    let mut times = Vec::with_capacity(trials);
-    let mut accuracies = Vec::with_capacity(trials);
-    for i in 0..trials {
-        println!("Iteration {}", i);
-        let now = Instant::now();
-        let c_prime = monte::multiply(&a, &b, sizes, 192);
-        times.push(now.elapsed());
-        accuracies.push(stats(&c, &c_prime));
-    }
-    perf_blocks.push(PerfBlock {
-        name: test_name,
-        time: times.into_iter().map(|x| x.as_secs_f64()).sum::<f64>() / trials as f64,
-        mae: accuracies.into_iter().sum::<f64>() / trials as f64,
-    });
+    //// monte carlo 192
+    //perf_blocks.push(run_test("monte 192".to_string(), &a, &b, sizes, &monte_192, &c, trials));
 
+    // hadamard 1536
+    perf_blocks.push(run_test("hadamard 1536".to_string(), &a, &b, sizes, &hadamard_1536, &c, trials));
 
+    // hadamard 1152
+    perf_blocks.push(run_test("hadamard 1152".to_string(), &a, &b, sizes, &hadamard_1152, &c, trials));
+
+    // hadamard 768
+    perf_blocks.push(run_test("hadamard 768".to_string(), &a, &b, sizes, &hadamard_768, &c, trials));
+
+    // hadamard 384
+    perf_blocks.push(run_test("hadamard 384".to_string(), &a, &b, sizes, &hadamard_384, &c, trials));
+
+    // hadamard 192
+    perf_blocks.push(run_test("hadamard 192".to_string(), &a, &b, sizes, &hadamard_192, &c, trials));
+
+    //// countsketch 1152 3
+    //perf_blocks.push(run_test("countsketch 1152 3".to_string(), &a, &b, sizes, &(|a, b, sizes| {countsketch_1152_3.try_borrow_mut().unwrap().matrix_multiply(a, b, sizes)}), &c, trials));
+
+    //// countsketch 1152 10
+    //perf_blocks.push(run_test("countsketch 1152 10".to_string(), &a, &b, sizes, &(|a, b, sizes| {countsketch_1152_10.try_borrow_mut().unwrap().matrix_multiply(a, b, sizes)}), &c, trials));
+
+    //// countsketch 1536 3
+    //perf_blocks.push(run_test("countsketch 1536 3".to_string(), &a, &b, sizes, &(|a, b, sizes| {countsketch_1536_3.try_borrow_mut().unwrap().matrix_multiply(a, b, sizes)}), &c, trials));
+
+    //// countsketch 1536 10
+    //perf_blocks.push(run_test("countsketch 1536 10".to_string(), &a, &b, sizes, &(|a, b, sizes| {countsketch_1536_10.try_borrow_mut().unwrap().matrix_multiply(a, b, sizes)}), &c, trials));
+
+    //// countsketch 1024 3
+    //perf_blocks.push(run_test("countsketch 1024 3".to_string(), &a, &b, sizes, &(|a, b, sizes| {countsketch_1024_3.try_borrow_mut().unwrap().matrix_multiply(a, b, sizes)}), &c, trials));
+
+    //// countsketch 1024 10
+    //perf_blocks.push(run_test("countsketch 1024 10".to_string(), &a, &b, sizes, &(|a, b, sizes| {countsketch_1024_10.try_borrow_mut().unwrap().matrix_multiply(a, b, sizes)}), &c, trials));
 
     println!("{:?}", perf_blocks);
 }
@@ -195,7 +204,51 @@ fn thing() {
 
 fn thing1() {
     let diseases = vec!["(vertigo) Paroymsal  Positional Vertigo", "AIDS", "Acne", "Alcoholic hepatitis", "Allergy", "Arthritis", "Bronchial Asthma", "Cervical spondylosis", "Chicken pox", "Chronic cholestasis", "Common Cold", "Dengue", "Diabetes ", "Dimorphic hemmorhoids(piles)", "Drug Reaction", "Fungal infection", "GERD", "Gastroenteritis", "Heart attack", "Hepatitis B", "Hepatitis C", "Hepatitis D", "Hepatitis E", "Hypertension ", "Hyperthyroidism", "Hypoglycemia", "Hypothyroidism", "Impetigo", "Jaundice", "Malaria", "Migraine", "Osteoarthristis", "Paralysis (brain hemorrhage)", "Peptic ulcer diseae", "Pneumonia", "Psoriasis", "Tuberculosis", "Typhoid", "Urinary tract infection", "Varicose veins", "hepatitis A"];
-    let diseases_size = diseases.len();
+    let disease_ids: HashMap<String, usize> = diseases
+        .iter()
+        .enumerate()
+        .map(|x| (String::from(*x.1), x.0))
+        .collect();
+
+    let disease_csv_raw = read_disease_train().unwrap();
+    //let disease_train: Vec<Vec<f32>> = disease_csv_raw.rows
+    //    .iter()
+    //    .map(|x| {
+    //        let mut ret: Vec<f32> = x.ints.iter().map(|x| *x as f32).collect();
+    //        ret.push(disease_ids[&x.string] as f32);
+    //        ret
+    //    })
+    //    .collect();
+    let disease_train_x: Vec<Vec<f32>> = disease_csv_raw.rows
+        .iter()
+        .map(|x| x.ints.iter().map(|x| *x as f32).collect())
+        .collect();
+    let disease_train_y: Vec<Vec<f32>> = disease_csv_raw.rows
+        .iter()
+        .map(|x| vec![disease_ids[&x.string] as f32])
+        .collect();
+
+    let disease_csv_raw = read_disease_test().unwrap();
+    let disease_test_x: Vec<Vec<f32>> = disease_csv_raw.rows
+        .iter()
+        .map(|x| x.ints.iter().map(|x| *x as f32).collect())
+        .collect();
+    let disease_test_y: Vec<Vec<f32>> = disease_csv_raw.rows
+        .iter()
+        .map(|x| vec![disease_ids[&x.string] as f32])
+        .collect();
+
+
+    let mut disease_neuralnet = NeuralNetwork::new(132, 500, 1, 0.01, MonteMultiplier::new(1152));
+    disease_neuralnet.train(&disease_train_x, &disease_train_y, 100);
+
+    let predicted: Vec<Vec<f32>> = disease_test_x
+        .iter()
+        .map(|x| disease_neuralnet.forward(x))
+        .collect();
+    
+    println!("Predicted: {:?}", predicted);
+    println!("Actual: {:?}", disease_test_y);
 }
 
 
