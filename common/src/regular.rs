@@ -1,11 +1,11 @@
-use crate::neuralnet::MatrixMultiplier;
+//use crate::neuralnet::MatrixMultiplier;
 
 pub struct RegularMultiplier {}
-impl MatrixMultiplier for RegularMultiplier {
-    fn multiply(&self, a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
-        multiply_float(a, b, sizes)
-    }
-}
+//impl MatrixMultiplier for RegularMultiplier {
+//    fn multiply(&self, a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+//        multiply_float(a, b, sizes)
+//    }
+//}
 
 
 /// Standard matrix multiplication

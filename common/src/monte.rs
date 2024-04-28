@@ -1,5 +1,5 @@
 use rand::{seq::SliceRandom, thread_rng};
-use crate::{neuralnet::MatrixMultiplier, regular};
+use crate::{neuralnet::Multiplier, regular};
 
 
 
@@ -11,11 +11,11 @@ impl MonteMultiplier {
         MonteMultiplier { downsample }
     }
 }
-impl MatrixMultiplier for MonteMultiplier {
-    fn multiply(&self, a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
-        multiply(a, b, sizes, self.downsample)
-    }
-}
+//impl Multiplier for MonteMultiplier {
+//    fn multiply(&self, a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
+//        multiply(a, b, sizes, self.downsample)
+//    }
+//}
 
 
 /// Downscale through random sampling
