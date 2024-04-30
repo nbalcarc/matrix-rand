@@ -161,11 +161,61 @@ impl<T: Multiplier> NeuralNetwork<T> {
     }
 
 
-    pub fn train(&mut self, batches: &[(Vec<f32>, Vec<f32>)], eta: f32) {
-        for (x, y) in batches {
+    /// Train the model on the provided batch and learning rate
+    pub fn train(&mut self, batch: &[(Vec<f32>, Vec<f32>)], eta: f32) {
+        let mut grad_w0_sum = vec![0.0; self.weights0.len()];
+        let mut grad_w1_sum = vec![0.0; self.weights1.len()];
+        let mut grad_w2_sum = vec![0.0; self.weights2.len()];
+        let mut grad_b0_sum = vec![0.0; self.bias0.len()];
+        let mut grad_b1_sum = vec![0.0; self.bias1.len()];
+        let mut grad_b2_sum = vec![0.0; self.bias2.len()];
+
+        // iterate through the batch
+        for (x, y) in batch {
             let (grad_w0, grad_w1, grad_w2, grad_b0, grad_b1, grad_b2) = self.backward(x, y);
+
+            // sum all the gradients to the accumulator
+            for i in grad_w0_sum.len() {
+                grad_w0_sum[i] += grad_w0[i];
+            }
+            for i in grad_w1_sum.len() {
+                grad_w1_sum[i] += grad_w1[i];
+            }
+            for i in grad_w2_sum.len() {
+                grad_w2_sum[i] += grad_w2[i];
+            }
+            for i in grad_b0_sum.len() {
+                grad_b0_sum[i] += grad_b0[i];
+            }
+            for i in grad_b1_sum.len() {
+                grad_b1_sum[i] += grad_b1[i];
+            }
+            for i in grad_b2_sum.len() {
+                grad_b2_sum[i] += grad_b2[i];
+            }
         }
 
+        // apply the updates to the weights and biases
+        let frac = eta / len(batch);
+
+        for i in grad_w0_sum.len() {
+            self.weights0[i] -= frac * grad_w0_sum;
+        }
+        for i in grad_w1_sum.len() {
+            self.weights1[i] -= frac * grad_w1_sum;
+        }
+        for i in grad_w2_sum.len() {
+            self.weights2[i] -= frac * grad_w2_sum;
+        }
+        for i in grad_b0_sum.len() {
+            self.bias0[i] -= frac * grad_b0_sum;
+        }
+        for i in grad_b1_sum.len() {
+            self.bias1[i] -= frac * grad_b1_sum;
+        }
+        for i in grad_b2_sum.len() {
+            self.bias2[i] -= frac * grad_b2_sum;
+        }
     }
 }
 
