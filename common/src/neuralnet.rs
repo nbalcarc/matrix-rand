@@ -85,16 +85,7 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
 
     /// Backward propagation with the given information
-    pub fn backward(&mut self, input: &[f32], expected: &[f32]) -> Vec<f32> {
-
-        // initialize vectors
-        let mut grads_w0 = vec![0.0; self.weights0.len()];
-        let mut grads_w1 = vec![0.0; self.weights1.len()];
-        let mut grads_w2 = vec![0.0; self.weights2.len()];
-
-        let mut grads_b0 = vec![0.0; self.bias0.len()];
-        let mut grads_b1 = vec![0.0; self.bias1.len()];
-        let mut grads_b2 = vec![0.0; self.bias2.len()];
+    pub fn backward(&mut self, input: &[f32], expected: &[f32]) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
 
         // forward first hidden layer
         let mut layer0_z = Vec::with_capacity(self.sizes.1);
@@ -146,9 +137,27 @@ impl<T: Multiplier> NeuralNetwork<T> {
         }
 
         // calculate gradients
+        let mut grads_w0 = vec![0.0; self.weights0.len()];
+        let mut grads_w1 = vec![0.0; self.weights1.len()];
+        let mut grads_w2 = vec![0.0; self.weights2.len()];
 
+        for n in 0..self.sizes.0 { //weights0 tall
+            for m in 0..self.sizes.1 { //weights0 wide
+                grads_w0[m + (n * self.sizes.1)] = input[n] * delta0[m];
+            }
+        }
+        for n in 0..self.sizes.1 { //weights1 tall
+            for m in 0..self.sizes.2 { //weights1 wide
+                grads_w1[m + (n * self.sizes.2)] = layer0[n] * delta1[m];
+            }
+        }
+        for n in 0..self.sizes.2 { //weights2 tall
+            for m in 0..self.sizes.3 { //weights2 wide
+                grads_w2[m + (n * self.sizes.3)] = layer1[n] * delta2[m];
+            }
+        }
 
-        todo!()
+        (grads_w0, grads_w1, grads_w2, delta0, delta1, delta2) //deltas are equal to bias grads
     }
 
 
