@@ -161,8 +161,11 @@ impl<T: Multiplier> NeuralNetwork<T> {
     }
 
 
-    pub fn train(&mut self, batch: &[Vec<f32>], eta: f32) {
-        
+    pub fn train(&mut self, batches: &[(Vec<f32>, Vec<f32>)], eta: f32) {
+        for (x, y) in batches {
+            let (grad_w0, grad_w1, grad_w2, grad_b0, grad_b1, grad_b2) = self.backward(x, y);
+        }
+
     }
 }
 
