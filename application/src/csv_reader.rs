@@ -15,7 +15,7 @@ pub struct DiseaseCSV {
 
 pub fn read_disease_train() -> Result<DiseaseCSV, Box<dyn Error>> {
     // Path to your CSV file
-    let csv_file_path = "/home/terrior/Downloads/kaggle_disease/Training.csv";
+    let csv_file_path = "/home/terrior/Downloads/kaggle-disease/Training.csv";
 
     // Create a CSV reader with headers enabled
     let file = File::open(csv_file_path)?;
@@ -56,7 +56,7 @@ pub fn read_disease_train() -> Result<DiseaseCSV, Box<dyn Error>> {
 
 pub fn read_disease_test() -> Result<DiseaseCSV, Box<dyn Error>> {
     // Path to your CSV file
-    let csv_file_path = "/home/terrior/Downloads/kaggle_disease/Testing.csv";
+    let csv_file_path = "/home/terrior/Downloads/kaggle-disease/Testing.csv";
 
     // Create a CSV reader with headers enabled
     let file = File::open(csv_file_path)?;

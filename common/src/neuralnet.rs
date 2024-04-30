@@ -85,7 +85,7 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
 
     /// Backward propagation with the given information
-    pub fn backward(&mut self, input: &[f32], expected: &[f32]) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
+    pub fn backward(&mut self, input: &[f32], expected: &[f32]) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, f32) {
 
         // forward first hidden layer
         let mut layer0_z = Vec::with_capacity(self.sizes.1);
@@ -116,7 +116,9 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
         // delta output layer
         let mut delta2 = vec![0.0; self.sizes.3];
+        let mut diffs = vec![0.0; self.sizes.3];
         for i in 0..delta2.len() {
+            diffs[i] = output[i] - expected[i];
             delta2[i] = (output[i] - expected[i]) * (1.0 - output_z[i].tanh().powi(2)); //take difference and mul by invert tanh of z
         }
 
@@ -157,12 +159,15 @@ impl<T: Multiplier> NeuralNetwork<T> {
             }
         }
 
-        (grads_w0, grads_w1, grads_w2, delta0, delta1, delta2) //deltas are equal to bias grads
+        // calculate average error
+        let avg_err = diffs.iter().sum::<f32>() / diffs.len() as f32;
+
+        (grads_w0, grads_w1, grads_w2, delta0, delta1, delta2, avg_err) //deltas are equal to bias grads
     }
 
 
     /// Train the model on the provided batch and learning rate
-    pub fn train(&mut self, batch: &[(Vec<f32>, Vec<f32>)], eta: f32) {
+    pub fn train(&mut self, batch: &[(Vec<f32>, Vec<f32>)], eta: f32) -> Vec<f32> {
         let mut grad_w0_sum = vec![0.0; self.weights0.len()];
         let mut grad_w1_sum = vec![0.0; self.weights1.len()];
         let mut grad_w2_sum = vec![0.0; self.weights2.len()];
@@ -170,52 +175,58 @@ impl<T: Multiplier> NeuralNetwork<T> {
         let mut grad_b1_sum = vec![0.0; self.bias1.len()];
         let mut grad_b2_sum = vec![0.0; self.bias2.len()];
 
+        let mut errors = Vec::with_capacity(batch.len());
+
         // iterate through the batch
         for (x, y) in batch {
-            let (grad_w0, grad_w1, grad_w2, grad_b0, grad_b1, grad_b2) = self.backward(x, y);
+            let (grad_w0, grad_w1, grad_w2, grad_b0, grad_b1, grad_b2, avg_err) = self.backward(x, y);
 
             // sum all the gradients to the accumulator
-            for i in grad_w0_sum.len() {
+            for i in 0..grad_w0_sum.len() {
                 grad_w0_sum[i] += grad_w0[i];
             }
-            for i in grad_w1_sum.len() {
+            for i in 0..grad_w1_sum.len() {
                 grad_w1_sum[i] += grad_w1[i];
             }
-            for i in grad_w2_sum.len() {
+            for i in 0..grad_w2_sum.len() {
                 grad_w2_sum[i] += grad_w2[i];
             }
-            for i in grad_b0_sum.len() {
+            for i in 0..grad_b0_sum.len() {
                 grad_b0_sum[i] += grad_b0[i];
             }
-            for i in grad_b1_sum.len() {
+            for i in 0..grad_b1_sum.len() {
                 grad_b1_sum[i] += grad_b1[i];
             }
-            for i in grad_b2_sum.len() {
+            for i in 0..grad_b2_sum.len() {
                 grad_b2_sum[i] += grad_b2[i];
             }
+
+            errors.push(avg_err);
         }
 
         // apply the updates to the weights and biases
-        let frac = eta / len(batch);
+        let frac = eta / batch.len() as f32;
 
-        for i in grad_w0_sum.len() {
-            self.weights0[i] -= frac * grad_w0_sum;
+        for i in 0..grad_w0_sum.len() {
+            self.weights0[i] -= frac * grad_w0_sum[i];
         }
-        for i in grad_w1_sum.len() {
-            self.weights1[i] -= frac * grad_w1_sum;
+        for i in 0..grad_w1_sum.len() {
+            self.weights1[i] -= frac * grad_w1_sum[i];
         }
-        for i in grad_w2_sum.len() {
-            self.weights2[i] -= frac * grad_w2_sum;
+        for i in 0..grad_w2_sum.len() {
+            self.weights2[i] -= frac * grad_w2_sum[i];
         }
-        for i in grad_b0_sum.len() {
-            self.bias0[i] -= frac * grad_b0_sum;
+        for i in 0..grad_b0_sum.len() {
+            self.bias0[i] -= frac * grad_b0_sum[i];
         }
-        for i in grad_b1_sum.len() {
-            self.bias1[i] -= frac * grad_b1_sum;
+        for i in 0..grad_b1_sum.len() {
+            self.bias1[i] -= frac * grad_b1_sum[i];
         }
-        for i in grad_b2_sum.len() {
-            self.bias2[i] -= frac * grad_b2_sum;
+        for i in 0..grad_b2_sum.len() {
+            self.bias2[i] -= frac * grad_b2_sum[i];
         }
+
+        errors
     }
 }
 
