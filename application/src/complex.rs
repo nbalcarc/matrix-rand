@@ -52,7 +52,7 @@ pub fn train_model<T: Multiplier>(
     multiplier: T,
     training_data: &Vec<(Vec<f32>, Vec<f32>)>,
     testing_data: &Vec<(Vec<f32>, Vec<f32>)>,
-) -> (String, f64, Vec<f32>, f32) {
+) -> (String, f64, Vec<f32>, f32, f32) {
     println!("Now training model with: {}", &name);
     let epochs = 100;
     let mut eta = 1.0; //learning rate
@@ -90,9 +90,16 @@ pub fn train_model<T: Multiplier>(
 
     // run testing phase
     let mut tally = 0;
+    let mut tallied_error = 0.0;
     for (x, y) in testing_data {
         let y_prime = neuralnet.forward(x);
         let mut correct = true;
+
+        let mut error = vec![0.0; y.len()];
+        for i in 0..y.len() {
+            error[i] = y_prime[i] - y[i];
+        }
+        tallied_error += error.iter().sum::<f32>() / error.len() as f32;
 
         // compare
         for i in 0..y.len() {
@@ -106,7 +113,7 @@ pub fn train_model<T: Multiplier>(
         }
     }
 
-    (name, time, training_errors, tally as f32 / testing_data.len() as f32)
+    (name, time, training_errors, tally as f32 / testing_data.len() as f32, tallied_error / testing_data.len() as f32)
 }
 
 
