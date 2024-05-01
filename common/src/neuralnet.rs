@@ -2,7 +2,6 @@ use num_traits::Float;
 use transpose::transpose;
 
 
-
 pub trait Multiplier {
     fn multiply(&mut self, a: &[f32], b: &[f32], sizes: (usize, usize, usize), c: &mut [f32]) -> ();
 }
@@ -125,7 +124,6 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
         // delta second hidden layer
         let mut delta1 = vec![0.0; self.sizes.2];
-        //let weights2_transposed = self.transpose(&self.weights2, (self.sizes.2, self.sizes.3));
         let mut weights2_transposed = vec![0.0; self.weights2.len()];
         transpose(&self.weights2, &mut weights2_transposed, self.sizes.2, self.sizes.3);
         self.multiplier.multiply(&weights2_transposed, &delta2, (self.sizes.3, self.sizes.2, 1), &mut delta1);
@@ -135,7 +133,6 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
         // delta first hidden layer
         let mut delta0 = vec![0.0; self.sizes.1];
-        //let weights1_transposed = self.transpose(&self.weights1, (self.sizes.1, self.sizes.2));
         let mut weights1_transposed = vec![0.0; self.weights1.len()];
         transpose(&self.weights1, &mut weights1_transposed, self.sizes.1, self.sizes.2);
         self.multiplier.multiply(&weights1_transposed, &delta1, (self.sizes.2, self.sizes.1, 1), &mut delta0);
@@ -234,19 +231,5 @@ impl<T: Multiplier> NeuralNetwork<T> {
         errors
     }
 }
-
-
-fn test_func(a: &[f32], b: &[f32], sizes: (usize, usize, usize), c: &mut [f32], d: i32) {
-
-}
-
-fn test1() {
-    //let x = NeuralNetwork::new(test_func);
-    //let y = test;
-    
-    //let x = NeuralNetwork::new(multiplier, sizes)
-}
-
-
 
 

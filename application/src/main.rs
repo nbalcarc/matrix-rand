@@ -1,4 +1,6 @@
 mod csv_reader;
+mod simple;
+mod complex;
 
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Instant};
@@ -8,15 +10,6 @@ use csv_reader::{read_disease_test, read_disease_train};
 use rand;
 
 
-
-
-
-#[derive(Debug, Clone)]
-struct PerfBlock {
-    name: String,
-    time: f64,
-    mae: f64,
-}    
 
 
 fn short() {
@@ -35,34 +28,6 @@ fn short() {
     //println!("{:?}", monte::multiply(&a, &b, sizes, 3));
 }
 
-fn run_test(
-    test_name: String,
-    a: &[f32],
-    b: &[f32],
-    sizes: (usize, usize, usize),
-    c: &mut [f32],
-    func: &dyn Fn(&[f32], &[f32], (usize, usize, usize), &mut [f32]),
-    y: &[f32],
-    trials: usize,
-) -> PerfBlock {
-
-    println!("Running test: {}", test_name);
-    let mut times = Vec::with_capacity(trials);
-    let mut accuracies = Vec::with_capacity(trials);
-    for i in 0..trials {
-        println!("Iteration {}", i);
-        let now = Instant::now();
-        let y_prime = func(a, b, sizes, c);
-        times.push(now.elapsed());
-        accuracies.push(stats(&y, &y_prime));
-    }
-    
-    PerfBlock {
-        name: test_name,
-        time: times.into_iter().map(|x| x.as_secs_f64()).sum::<f64>() / trials as f64,
-        mae: accuracies.into_iter().sum::<f64>() / trials as f64,
-    }
-}
 
 
 //fn monte_1152(a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
@@ -116,9 +81,9 @@ fn thing() {
     //let a_int: Vec<i32> = (0..sizes.0*sizes.1).into_iter().map(|_| rand::random()).collect();
     //let b_int: Vec<i32> = (0..sizes.1*sizes.2).into_iter().map(|_| rand::random()).collect();
 
-    let mut c = Vec::new();
+    //let mut c = Vec::new();
 
-    let mut perf_blocks = Vec::with_capacity(16);
+    //let mut perf_blocks = Vec::with_capacity(16);
 
     //let countsketch_1536_3 = Rc::new(RefCell::new(CountSketch::new(sizes.0, 1536, 3)));
     //let countsketch_1536_10 = Rc::new(RefCell::new(CountSketch::new(sizes.0, 1536, 10)));
@@ -193,91 +158,12 @@ fn thing() {
 
 
 
-fn thing1() {
-    let diseases = vec!["(vertigo) Paroymsal  Positional Vertigo", "AIDS", "Acne", "Alcoholic hepatitis", "Allergy", "Arthritis", "Bronchial Asthma", "Cervical spondylosis", "Chicken pox", "Chronic cholestasis", "Common Cold", "Dengue", "Diabetes ", "Dimorphic hemmorhoids(piles)", "Drug Reaction", "Fungal infection", "GERD", "Gastroenteritis", "Heart attack", "Hepatitis B", "Hepatitis C", "Hepatitis D", "Hepatitis E", "Hypertension ", "Hyperthyroidism", "Hypoglycemia", "Hypothyroidism", "Impetigo", "Jaundice", "Malaria", "Migraine", "Osteoarthristis", "Paralysis (brain hemorrhage)", "Peptic ulcer diseae", "Pneumonia", "Psoriasis", "Tuberculosis", "Typhoid", "Urinary tract infection", "Varicose veins", "hepatitis A"];
-    let disease_ids: HashMap<String, usize> = diseases
-        .iter()
-        .enumerate()
-        .map(|x| (String::from(*x.1), x.0))
-        .collect();
 
-    // get disease training data
-    let disease_csv_raw = read_disease_train().unwrap();
-    let disease_train_x: Vec<Vec<f32>> = disease_csv_raw.rows
-        .iter()
-        .map(|x| x.ints.iter().map(|x| *x as f32).collect())
-        .collect();
-    let disease_train_y: Vec<Vec<f32>> = disease_csv_raw.rows
-        .iter()
-        .map(|x| vec![disease_ids[&x.string] as f32])
-        .collect();
-
-    // get disease testing data
-    let disease_csv_raw = read_disease_test().unwrap();
-    let disease_test_x: Vec<Vec<f32>> = disease_csv_raw.rows
-        .iter()
-        .map(|x| x.ints.iter().map(|x| *x as f32).collect())
-        .collect();
-    let disease_test_y: Vec<Vec<f32>> = disease_csv_raw.rows
-        .iter()
-        .map(|x| vec![disease_ids[&x.string] as f32])
-        .collect();
-
-    println!("{:?}\n", disease_test_x);
-    println!("{:?}\n", disease_test_y);
-    println!("{}", diseases.len());
-}
-
-
-fn thing2() {
-    let diseases = vec!["(vertigo) Paroymsal  Positional Vertigo", "AIDS", "Acne", "Alcoholic hepatitis", "Allergy", "Arthritis", "Bronchial Asthma", "Cervical spondylosis", "Chicken pox", "Chronic cholestasis", "Common Cold", "Dengue", "Diabetes ", "Dimorphic hemmorhoids(piles)", "Drug Reaction", "Fungal infection", "GERD", "Gastroenteritis", "Heart attack", "Hepatitis B", "Hepatitis C", "Hepatitis D", "Hepatitis E", "Hypertension ", "Hyperthyroidism", "Hypoglycemia", "Hypothyroidism", "Impetigo", "Jaundice", "Malaria", "Migraine", "Osteoarthristis", "Paralysis (brain hemorrhage)", "Peptic ulcer diseae", "Pneumonia", "Psoriasis", "Tuberculosis", "Typhoid", "Urinary tract infection", "Varicose veins", "hepatitis A"];
-    let disease_ids: HashMap<String, usize> = diseases
-        .iter()
-        .enumerate()
-        .map(|x| (String::from(*x.1), x.0))
-        .collect(); //string to index
-
-    // get disease training data
-    let disease_csv_raw = read_disease_train().unwrap();
-    let disease_train_x: Vec<Vec<f32>> = disease_csv_raw.rows
-        .iter()
-        .map(|x| x.ints.iter().map(|x| *x as f32).collect())
-        .collect();
-    let disease_train_y: Vec<Vec<f32>> = disease_csv_raw.rows
-        .iter()
-        .map(|x| {
-            let mut y = vec![0.0; diseases.len()];
-            y[disease_ids[&x.string]] = 1.0;
-            y
-        })
-        .collect();
-
-    // get disease testing data
-    let disease_csv_raw = read_disease_test().unwrap();
-    let disease_test_x: Vec<Vec<f32>> = disease_csv_raw.rows
-        .iter()
-        .map(|x| x.ints.iter().map(|x| *x as f32).collect())
-        .collect();
-    let disease_test_y: Vec<Vec<f32>> = disease_csv_raw.rows
-        .iter()
-        .map(|x| {
-            let mut y = vec![0.0; diseases.len()];
-            y[disease_ids[&x.string]] = 1.0;
-            y
-        })
-        .collect();
-
-    println!("{:?}\n", disease_test_x);
-    println!("{:?}\n", disease_test_y);
-    println!("{}", diseases.len());
-    println!("{}", disease_test_x.len());
-    println!("{}", disease_train_x.len());
-}
 
 
 fn main() {
     println!("Hello, world!");
-    thing2();
+    //thing2();
 }
 
 
