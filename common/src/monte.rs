@@ -3,14 +3,14 @@ use crate::{neuralnet::Multiplier, regular};
 
 
 
-pub struct MonteMultiplier {
-    pub downsample: usize, //how many columns to sample
-}
-impl MonteMultiplier {
-    pub fn new(downsample: usize) -> Self {
-        MonteMultiplier { downsample }
-    }
-}
+//pub struct MonteMultiplier {
+//    pub downsample: usize, //how many columns to sample
+//}
+//impl MonteMultiplier {
+//    pub fn new(downsample: usize) -> Self {
+//        MonteMultiplier { downsample }
+//    }
+//}
 //impl Multiplier for MonteMultiplier {
 //    fn multiply(&self, a: &[f32], b: &[f32], sizes: (usize, usize, usize)) -> Vec<f32> {
 //        multiply(a, b, sizes, self.downsample)
@@ -72,7 +72,8 @@ pub fn multiply(a: &[f32], b: &[f32], sizes: (usize, usize, usize), downsample: 
     }
 
     // return final result
-    regular::multiply_float(&s, &r, (sizes.0, downsample, sizes.2))
+    todo!()
+    //regular::multiply_float(&s, &r, (sizes.0, downsample, sizes.2))
 }
 
 

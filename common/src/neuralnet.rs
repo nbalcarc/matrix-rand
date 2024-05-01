@@ -238,6 +238,8 @@ fn test_func(a: &[f32], b: &[f32], sizes: (usize, usize, usize), c: &mut [f32], 
 fn test1() {
     //let x = NeuralNetwork::new(test_func);
     //let y = test;
+    
+    //let x = NeuralNetwork::new(multiplier, sizes)
 }
 
 
