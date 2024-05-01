@@ -1,4 +1,5 @@
 use num_traits::Float;
+use transpose::transpose;
 
 
 
@@ -42,18 +43,18 @@ impl<T: Multiplier> NeuralNetwork<T> {
     }
 
 
-    /// Transpose a matrix
-    pub fn transpose(&self, input: &[f32], sizes: (usize, usize)) -> Vec<f32> {
-        let mut ret = vec![0.0; input.len()];
+    ///// Transpose a matrix
+    //pub fn transpose(&self, input: &[f32], sizes: (usize, usize)) -> Vec<f32> {
+    //    let mut ret = vec![0.0; input.len()];
 
-        for n in 0..sizes.0 { //input tall, return wide
-            for m in 0..sizes.1 { //input wide, return tall
-                ret[n + (m * sizes.0)] = input[m + (n * sizes.1)]; //place into correct new index
-            }
-        }
+    //    for n in 0..sizes.0 { //input tall, return wide
+    //        for m in 0..sizes.1 { //input wide, return tall
+    //            ret[n + (m * sizes.0)] = input[m + (n * sizes.1)]; //place into correct new index
+    //        }
+    //    }
 
-        ret
-    }
+    //    ret
+    //}
 
 
     /// Forward propagation with the given input
@@ -124,7 +125,9 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
         // delta second hidden layer
         let mut delta1 = vec![0.0; self.sizes.2];
-        let weights2_transposed = self.transpose(&self.weights2, (self.sizes.2, self.sizes.3));
+        //let weights2_transposed = self.transpose(&self.weights2, (self.sizes.2, self.sizes.3));
+        let mut weights2_transposed = vec![0.0; self.weights2.len()];
+        transpose(&self.weights2, &mut weights2_transposed, self.sizes.2, self.sizes.3);
         self.multiplier.multiply(&weights2_transposed, &delta2, (self.sizes.3, self.sizes.2, 1), &mut delta1);
         for i in 0..delta1.len() {
             delta1[i] *= layer1_z[i];
@@ -132,7 +135,9 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
         // delta first hidden layer
         let mut delta0 = vec![0.0; self.sizes.1];
-        let weights1_transposed = self.transpose(&self.weights1, (self.sizes.1, self.sizes.2));
+        //let weights1_transposed = self.transpose(&self.weights1, (self.sizes.1, self.sizes.2));
+        let mut weights1_transposed = vec![0.0; self.weights1.len()];
+        transpose(&self.weights1, &mut weights1_transposed, self.sizes.1, self.sizes.2);
         self.multiplier.multiply(&weights1_transposed, &delta1, (self.sizes.2, self.sizes.1, 1), &mut delta0);
         for i in 0..delta0.len() {
             delta0[i] *= layer0_z[i];

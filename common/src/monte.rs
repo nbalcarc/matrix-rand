@@ -19,7 +19,7 @@ use crate::{neuralnet::Multiplier, regular};
 
 
 /// Downscale through random sampling
-pub fn multiply(a: &[f32], b: &[f32], sizes: (usize, usize, usize), downsample: usize) -> Vec<f32> {
+pub fn multiply(a: &[f32], b: &[f32], sizes: (usize, usize, usize), c: &mut [f32], downsample: usize) {
     // note: sizes = (A height, A width && B height, B width)
 
     // turn A into columns for ease of access
@@ -71,9 +71,7 @@ pub fn multiply(a: &[f32], b: &[f32], sizes: (usize, usize, usize), downsample: 
         r.extend(adjusted_rcol);
     }
 
-    // return final result
-    todo!()
-    //regular::multiply_float(&s, &r, (sizes.0, downsample, sizes.2))
+    regular::multiply_float(&s, &r, (sizes.0, downsample, sizes.2), c);
 }
 
 
