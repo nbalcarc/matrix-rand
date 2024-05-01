@@ -6,6 +6,11 @@ impl Multiplier for RegularMultiplier {
         multiply(a, b, sizes, c)
     }
 }
+impl RegularMultiplier {
+    pub fn new() -> Self {
+        RegularMultiplier { }
+    }
+}
 
 
 /// Standard matrix multiplication

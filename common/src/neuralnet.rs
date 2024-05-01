@@ -1,6 +1,8 @@
 use num_traits::Float;
 use transpose::transpose;
 
+use crate::tools::normalize_vector;
+
 
 pub trait Multiplier {
     fn multiply(&mut self, a: &[f32], b: &[f32], sizes: (usize, usize, usize), c: &mut [f32]) -> ();
@@ -30,14 +32,14 @@ impl<T: Multiplier> NeuralNetwork<T> {
             sizes,
             multiplier,
             
-            weights0: (0..sizes.0*sizes.1).into_iter().map(|_| rand::random()).collect(),
-            bias0: (0..sizes.1).into_iter().map(|_| rand::random()).collect(),
+            weights0: (0..sizes.0*sizes.1).into_iter().map(|_| rand::random::<f32>() - 0.5).collect(),
+            bias0: (0..sizes.1).into_iter().map(|_| rand::random::<f32>() - 0.5).collect(),
 
-            weights1: (0..sizes.1*sizes.2).into_iter().map(|_| rand::random()).collect(),
-            bias1: (0..sizes.2).into_iter().map(|_| rand::random()).collect(),
+            weights1: (0..sizes.1*sizes.2).into_iter().map(|_| rand::random::<f32>() - 0.5).collect(),
+            bias1: (0..sizes.2).into_iter().map(|_| rand::random::<f32>() - 0.5).collect(),
 
-            weights2: (0..sizes.2*sizes.3).into_iter().map(|_| rand::random()).collect(),
-            bias2: (0..sizes.3).into_iter().map(|_| rand::random()).collect(),
+            weights2: (0..sizes.2*sizes.3).into_iter().map(|_| rand::random::<f32>() - 0.5).collect(),
+            bias2: (0..sizes.3).into_iter().map(|_| rand::random::<f32>() - 0.5).collect(),
         }
     }
 
@@ -86,60 +88,97 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
     /// Backward propagation with the given information
     pub fn backward(&mut self, input: &[f32], expected: &[f32]) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, f32) {
+        //println!("HERE");
+        //println!("{:?}", self.weights0);
+        //println!("input {:?}", input);
+        //todo!();
 
         // forward first hidden layer
-        let mut layer0_z = Vec::with_capacity(self.sizes.1);
-        let mut layer0 = Vec::with_capacity(self.sizes.1);
+        let mut layer0_z = vec![0.0; self.sizes.1];
+        let mut layer0 = vec![0.0; self.sizes.1];
+        //println!("status0");
         self.multiplier.multiply(&input, &self.weights0, (1, self.sizes.0, self.sizes.1), &mut layer0); //matrix mul
         for i in 0..layer0.len() { //apply bias + nonlinearity
             layer0_z[i] = layer0[i] + self.bias0[i];
             layer0[i] = (layer0[i] + self.bias0[i]).tanh();
         }
+        normalize_vector(&mut layer0_z);
+        //normalize_vector(&mut layer0);
         
         // forward second hidden layer
-        let mut layer1_z = Vec::with_capacity(self.sizes.2);
-        let mut layer1 = Vec::with_capacity(self.sizes.2);
+        //println!("status1");
+        let mut layer1_z = vec![0.0; self.sizes.2];
+        let mut layer1 = vec![0.0; self.sizes.2];
         self.multiplier.multiply(&layer0, &self.weights1, (1, self.sizes.1, self.sizes.2), &mut layer1); //matrix mul
         for i in 0..layer1.len() { //apply bias + nonlinearity
             layer1_z[i] = layer1[i] + self.bias1[i];
             layer1[i] = (layer1[i] + self.bias1[i]).tanh();
         }
+        normalize_vector(&mut layer1_z);
+        //normalize_vector(&mut layer1);
 
         // forward output layer
-        let mut output_z = Vec::with_capacity(self.sizes.3);
-        let mut output = Vec::with_capacity(self.sizes.3);
+        //println!("status2");
+        let mut output_z = vec![0.0; self.sizes.3];
+        let mut output = vec![0.0; self.sizes.3];
         self.multiplier.multiply(&layer1, &self.weights2, (1, self.sizes.2, self.sizes.3), &mut output); //matrix mul
         for i in 0..output.len() { //apply bias + nonlinearity
             output_z[i] = output[i] + self.bias2[i];
             output[i] = (output[i] + self.bias2[i]).tanh();
         }
+        normalize_vector(&mut output_z);
+        //normalize_vector(&mut output);
+        //println!("OUTPUT_Z {:?}", output_z);
+        //println!("OUTPUT {:?}", output);
+        //println!("REAL {:?}", expected);
+        //println!("WEIGHT {:?}", self.weights0);
 
+        //println!("status3");
         // delta output layer
         let mut delta2 = vec![0.0; self.sizes.3];
         let mut diffs = vec![0.0; self.sizes.3];
         for i in 0..delta2.len() {
             diffs[i] = output[i] - expected[i];
             delta2[i] = (output[i] - expected[i]) * (1.0 - output_z[i].tanh().powi(2)); //take difference and mul by invert tanh of z
+            if delta2[i].is_infinite() || delta2[i].is_nan() {
+                todo!();
+            }
         }
+        //println!("DIFFS {:?}", diffs);
+        //println!("DELTA2 {:?}", delta2);
 
+        //println!("status4");
         // delta second hidden layer
         let mut delta1 = vec![0.0; self.sizes.2];
-        let mut weights2_transposed = vec![0.0; self.weights2.len()];
-        transpose(&self.weights2, &mut weights2_transposed, self.sizes.2, self.sizes.3);
-        self.multiplier.multiply(&weights2_transposed, &delta2, (self.sizes.3, self.sizes.2, 1), &mut delta1);
+        //let mut weights2_transposed = vec![0.0; self.weights2.len()];
+        //transpose(&self.weights2, &mut weights2_transposed, self.sizes.3, self.sizes.2);
+        //self.multiplier.multiply(&weights2_transposed, &delta2, (self.sizes.3, self.sizes.2, 1), &mut delta1);
+        self.multiplier.multiply(&self.weights2, &delta2, (self.sizes.2, self.sizes.3, 1), &mut delta1);
         for i in 0..delta1.len() {
             delta1[i] *= layer1_z[i];
+            if delta1[i].is_infinite() || delta1[i].is_nan() {
+                todo!();
+            }
         }
+        //println!("DELTA1 {:?}", delta1);
 
+        //println!("status5");
         // delta first hidden layer
         let mut delta0 = vec![0.0; self.sizes.1];
-        let mut weights1_transposed = vec![0.0; self.weights1.len()];
-        transpose(&self.weights1, &mut weights1_transposed, self.sizes.1, self.sizes.2);
-        self.multiplier.multiply(&weights1_transposed, &delta1, (self.sizes.2, self.sizes.1, 1), &mut delta0);
+        //let mut weights1_transposed = vec![0.0; self.weights1.len()];
+        //transpose(&self.weights1, &mut weights1_transposed, self.sizes.2, self.sizes.1);
+        //self.multiplier.multiply(&weights1_transposed, &delta1, (self.sizes.2, self.sizes.1, 1), &mut delta0);
+        self.multiplier.multiply(&self.weights1, &delta1, (self.sizes.1, self.sizes.2, 1), &mut delta0);
         for i in 0..delta0.len() {
             delta0[i] *= layer0_z[i];
+            if delta0[i].is_infinite() || delta0[i].is_nan() {
+                println!("{:?}", layer0_z[i]);
+                todo!();
+            }
         }
+        //println!("DELTA0 {:?}", delta0);
 
+        //println!("status6");
         // calculate gradients
         let mut grads_w0 = vec![0.0; self.weights0.len()];
         let mut grads_w1 = vec![0.0; self.weights1.len()];
@@ -148,21 +187,37 @@ impl<T: Multiplier> NeuralNetwork<T> {
         for n in 0..self.sizes.0 { //weights0 tall
             for m in 0..self.sizes.1 { //weights0 wide
                 grads_w0[m + (n * self.sizes.1)] = input[n] * delta0[m];
+                if grads_w0[m + (n * self.sizes.1)].is_infinite() || grads_w0[m + (n * self.sizes.1)].is_nan() {
+                    todo!();
+                }
             }
         }
         for n in 0..self.sizes.1 { //weights1 tall
             for m in 0..self.sizes.2 { //weights1 wide
                 grads_w1[m + (n * self.sizes.2)] = layer0[n] * delta1[m];
+                if grads_w1[m + (n * self.sizes.2)].is_infinite() || grads_w1[m + (n * self.sizes.2)].is_nan() {
+                    todo!();
+                }
             }
         }
         for n in 0..self.sizes.2 { //weights2 tall
             for m in 0..self.sizes.3 { //weights2 wide
                 grads_w2[m + (n * self.sizes.3)] = layer1[n] * delta2[m];
+                if grads_w2[m + (n * self.sizes.3)].is_infinite() || grads_w2[m + (n * self.sizes.3)].is_nan() {
+                    todo!();
+                }
             }
         }
+        //println!("GRADS_W0 {:?}\n", grads_w0);
 
         // calculate average error
         let avg_err = diffs.iter().sum::<f32>() / diffs.len() as f32;
+        //println!("ERR {}", avg_err);
+        //if avg_err.is_nan() {
+        //    //println!("{:?}", diffs);
+        //    //println!("{}", diffs.len());
+        //    todo!();
+        //}
 
         (grads_w0, grads_w1, grads_w2, delta0, delta1, delta2, avg_err) //deltas are equal to bias grads
     }
@@ -181,7 +236,11 @@ impl<T: Multiplier> NeuralNetwork<T> {
 
         // iterate through the batch
         for (x, y) in batch {
+            //println!("here");
+            //println!("{:?}", x);
+            //println!("{:?}", y);
             let (grad_w0, grad_w1, grad_w2, grad_b0, grad_b1, grad_b2, avg_err) = self.backward(x, y);
+            //println!("here1");
 
             // sum all the gradients to the accumulator
             for i in 0..grad_w0_sum.len() {
@@ -206,8 +265,12 @@ impl<T: Multiplier> NeuralNetwork<T> {
             errors.push(avg_err);
         }
 
+        //println!("BATCH ERROR: {}", errors[errors.len() - 1]);
+
         // apply the updates to the weights and biases
         let frac = eta / batch.len() as f32;
+        //println!("FRAC {}", frac);
+        //todo!();
 
         for i in 0..grad_w0_sum.len() {
             self.weights0[i] -= frac * grad_w0_sum[i];

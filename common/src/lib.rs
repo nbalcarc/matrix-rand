@@ -1,10 +1,9 @@
 pub mod regular;
 pub mod monte;
 pub mod tools;
+pub mod neuralnet;
 pub mod compression;
 pub mod hadamard;
-pub mod countsketch;
-pub mod neuralnet;
 
 //pub fn add(left: usize, right: usize) -> usize {
 //    left + right

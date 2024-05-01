@@ -1,5 +1,5 @@
 use std::time::Instant;
-use common::{countsketch::CountSketch, hadamard::HadamardMultiplier, monte::MonteMultiplier, neuralnet::Multiplier, regular, tools::stats};
+use common::{hadamard::HadamardMultiplier, monte::MonteMultiplier, neuralnet::Multiplier, regular, tools::stats};
 
 
 #[derive(Debug, Clone)]
@@ -26,6 +26,9 @@ fn run_test<T: Multiplier>(
     let mut accuracies = Vec::with_capacity(trials);
     for i in 0..trials {
         println!("Iteration {}", i);
+        for i in 0..c.len() {
+            c[i] = 0.0;
+        }
         let now = Instant::now();
         multiplier.multiply(a, b, sizes, c);
         times.push(now.elapsed());
@@ -42,7 +45,7 @@ fn run_test<T: Multiplier>(
 
 pub fn run_simple() {
     let sizes = (2_048, 1_536, 1_024);
-    let trials = 10;
+    let trials = 10; //SET TO 10 AGAIN
 
     println!("Generating matrices");
     let a: Vec<f32> = (0..sizes.0*sizes.1).into_iter().map(|_| rand::random()).collect();
@@ -55,7 +58,7 @@ pub fn run_simple() {
     let test_name = String::from("regular");
     println!("Running test: {}", test_name);
     let mut times = Vec::with_capacity(trials);
-    for i in 0..trials { //CHANGE THIS BACK TO TRIALS
+    for i in 0..1 {
         println!("Iteration {}", i);
         let now = Instant::now();
         regular::multiply(&a, &b, sizes, &mut c);
@@ -68,59 +71,31 @@ pub fn run_simple() {
     });
 
     // save reference for rest of multiplications
-    let mut y = c.clone();
+    let y = c.clone();
 
-    // monte carlo 1536
+    //perf_blocks.push(run_test("countsketch".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(sizes.0, sizes.1), &y, trials));
+
     perf_blocks.push(run_test("monte 1536".to_string(), &a, &b, sizes, &mut c, &mut MonteMultiplier::new(1536), &y, trials));
-
-    // monte carlo 1152
     perf_blocks.push(run_test("monte 1152".to_string(), &a, &b, sizes, &mut c, &mut MonteMultiplier::new(1152), &y, trials));
-
-    // monte carlo 768
     perf_blocks.push(run_test("monte 768".to_string(), &a, &b, sizes, &mut c, &mut MonteMultiplier::new(768), &y, trials));
-
-    // monte carlo 384
     perf_blocks.push(run_test("monte 384".to_string(), &a, &b, sizes, &mut c, &mut MonteMultiplier::new(384), &y, trials));
-
-    // monte carlo 192
     perf_blocks.push(run_test("monte 192".to_string(), &a, &b, sizes, &mut c, &mut MonteMultiplier::new(192), &y, trials));
-
-    // hadamard 1536
+    perf_blocks.push(run_test("monte 96".to_string(), &a, &b, sizes, &mut c, &mut MonteMultiplier::new(96), &y, trials));
+    perf_blocks.push(run_test("monte 48".to_string(), &a, &b, sizes, &mut c, &mut MonteMultiplier::new(48), &y, trials));
+    perf_blocks.push(run_test("monte 24".to_string(), &a, &b, sizes, &mut c, &mut MonteMultiplier::new(24), &y, trials));
     perf_blocks.push(run_test("hadamard 1536".to_string(), &a, &b, sizes, &mut c, &mut HadamardMultiplier::new(1536), &y, trials));
-
-    // hadamard 1152
     perf_blocks.push(run_test("hadamard 1152".to_string(), &a, &b, sizes, &mut c, &mut HadamardMultiplier::new(1152), &y, trials));
-
-    // hadamard 768
     perf_blocks.push(run_test("hadamard 768".to_string(), &a, &b, sizes, &mut c, &mut HadamardMultiplier::new(768), &y, trials));
-
-    // hadamard 384
     perf_blocks.push(run_test("hadamard 384".to_string(), &a, &b, sizes, &mut c, &mut HadamardMultiplier::new(384), &y, trials));
-
-    // hadamard 192
     perf_blocks.push(run_test("hadamard 192".to_string(), &a, &b, sizes, &mut c, &mut HadamardMultiplier::new(192), &y, trials));
-
-    // countsketch 1536 3
-    perf_blocks.push(run_test("countsketch 1536 3".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1536, 3), &y, trials));
-
-    // countsketch 1536 10
-    perf_blocks.push(run_test("countsketch 1536 10".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1536, 10), &y, trials));
-
-    // countsketch 1152 3
-    perf_blocks.push(run_test("countsketch 1152 3".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1152, 3), &y, trials));
-
-    // countsketch 1152 10
-    perf_blocks.push(run_test("countsketch 1152 10".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1152, 10), &y, trials));
-
-    // countsketch 1024 3
-    perf_blocks.push(run_test("countsketch 1024 3".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1024, 3), &y, trials));
-
-    // countsketch 1024 10
-    perf_blocks.push(run_test("countsketch 1024 10".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1024, 10), &y, trials));
+    //perf_blocks.push(run_test("countsketch 1536 3".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1536, 3), &y, trials));
+    //perf_blocks.push(run_test("countsketch 1536 10".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1536, 10), &y, trials));
+    //perf_blocks.push(run_test("countsketch 1152 3".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1152, 3), &y, trials));
+    //perf_blocks.push(run_test("countsketch 1152 10".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1152, 10), &y, trials));
+    //perf_blocks.push(run_test("countsketch 1024 3".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1024, 3), &y, trials));
+    //perf_blocks.push(run_test("countsketch 1024 10".to_string(), &a, &b, sizes, &mut c, &mut CountSketch::new(1024, 10), &y, trials));
 
     println!("{:?}", perf_blocks);
-
-
 }
 
 
